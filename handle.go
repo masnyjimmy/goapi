@@ -2,12 +2,47 @@ package goapi
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"reflect"
+	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 )
+
+var ErrInvalidValueFormat = errors.New("invalid value format")
+
+func parseValue(value string, t JsonType) (reflect.Value, error) {
+	switch t {
+	case JsonBoolean:
+		switch value {
+		case "true":
+			return reflect.ValueOf(true), nil
+		case "false":
+			return reflect.ValueOf(false), nil
+		default:
+			return reflect.Value{}, fmt.Errorf("invalid boolean value: %s", value)
+		}
+	case JsonInteger:
+		val, err := strconv.ParseInt(value, 10, 0)
+		if err != nil {
+			return reflect.Value{}, fmt.Errorf("invalid integer value: %s", value)
+		}
+		return reflect.ValueOf(val), nil
+	case JsonNumber:
+		val, err := strconv.ParseFloat(value, 32)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(val), nil
+	case JsonString:
+		return reflect.ValueOf(value), nil
+	}
+
+	panic("invalid json type")
+}
 
 type HandleParam struct {
 	In       ParamIn
@@ -57,6 +92,7 @@ func makeRouterHandle(api *API, data HandleData) httprouter.Handle {
 
 				if value == "" {
 					if el.Required {
+						panic("Required but not provided")
 						//TODO: handle http error, (invalid parameters)
 					} else {
 						out[index] = reflect.Zero(paramType)
@@ -65,7 +101,44 @@ func makeRouterHandle(api *API, data HandleData) httprouter.Handle {
 					parsedValue, err := parseValue(value, el.JsonType)
 
 					if err != nil {
+						panic("Unable to parse value")
 						//TODO: handle http error, invalid request or som
+					}
+
+					out[index] = parsedValue.Convert(paramType)
+				}
+			case ParamHeader: // header
+				value := req.Header.Get(el.Name)
+
+				if value == "" {
+					if el.Required {
+						panic("Unhandled: el.Required but not provided")
+					} else {
+						out[index] = reflect.Zero(paramType)
+					}
+				} else {
+					parsedValue, err := parseValue(value, el.JsonType)
+
+					if err != nil {
+						panic("unable to parse value")
+					}
+
+					out[index] = parsedValue.Convert(paramType)
+				}
+			case ParamCookie:
+				cookie, err := req.Cookie(el.Name)
+
+				if err != nil {
+					if el.Required {
+						panic("Required but not provided")
+					} else {
+						out[index] = reflect.Zero(paramType)
+					}
+				} else {
+					parsedValue, err := parseValue(cookie.Value, el.JsonType)
+
+					if err != nil {
+						panic("unable to parse value")
 					}
 
 					out[index] = parsedValue.Convert(paramType)

@@ -47,7 +47,7 @@ func (r *Router) Route(method Method, prefix string, fn Endpoint, spec RouteSpec
 		}
 	}
 
-	ep := NewEndpointMethod(r.api, method, fullPath, fn, spec)
+	ep := newEndpointMethod(r.api, method, fullPath, fn, spec)
 
 	return ep.Handler
 }

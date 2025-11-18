@@ -1,11 +1,9 @@
 package goapi
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"runtime"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -35,38 +33,6 @@ type Parameter struct {
 }
 
 type Parameters []Parameter
-
-var ErrInvalidValueFormat = errors.New("invalid value format")
-
-func parseValue(value string, t JsonType) (reflect.Value, error) {
-	switch t {
-	case JsonBoolean:
-		switch value {
-		case "true":
-			return reflect.ValueOf(true), nil
-		case "false":
-			return reflect.ValueOf(false), nil
-		default:
-			return reflect.Value{}, fmt.Errorf("invalid boolean value: %s", value)
-		}
-	case JsonInteger:
-		val, err := strconv.ParseInt(value, 10, 0)
-		if err != nil {
-			return reflect.Value{}, fmt.Errorf("invalid integer value: %s", value)
-		}
-		return reflect.ValueOf(val), nil
-	case JsonNumber:
-		val, err := strconv.ParseFloat(value, 32)
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		return reflect.ValueOf(val), nil
-	case JsonString:
-		return reflect.ValueOf(value), nil
-	}
-
-	panic("invalid json type")
-}
 
 type EndpointMethod struct {
 	Method       Method
@@ -134,6 +100,11 @@ func (p *Parameters) RegisterParameter(Type reflect.Type, prefix string) (Parame
 		in = ParamPath
 	}
 
+	// override if specified by user
+	if inSpec := extractIn(Type); inSpec != ParamUndefined {
+		in = inSpec
+	}
+
 	// build meta (openapi::schema) part
 	jt, err := resolveJsonType(Type)
 
@@ -177,7 +148,7 @@ func getFunctionName(fn any) string {
 	return string(r)
 }
 
-func NewEndpointMethod(
+func newEndpointMethod(
 	api *API,
 	method Method,
 	prefix string,

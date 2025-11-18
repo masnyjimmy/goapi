@@ -61,11 +61,13 @@ type API struct {
 func NewAPI[E error, T any](
 	router *httprouter.Router,
 	errorHandler ErrorHandler[E, T],
+	meta AppMeta,
 ) API {
 	api := API{
 		errorHandler: func(r Response, req *http.Request, err any) any {
 			return errorHandler(r, req, err.(E))
 		},
+		Meta:   meta,
 		router: router,
 	}
 

@@ -5,28 +5,27 @@ import (
 	"sync"
 )
 
-type ParamSpec struct {
+type Spec struct {
 	Name        string
 	Required    bool
 	Description string
 }
 
-type ParamType interface {
-	Spec() ParamSpec
+type paramType interface {
+	Spec() Spec
 }
 
-type ParamWithFormat interface {
+type paramWithFormat interface {
 	Format() string
 }
 
-type ParamWithIn interface {
+type paramWithIn interface {
 	In() ParamIn
 }
 
-var (
-	paramTypeInterface       = reflect.TypeOf((*ParamType)(nil)).Elem()
-	paramWithFormatInterface = reflect.TypeOf((*ParamWithFormat)(nil)).Elem()
-)
+func getInterface[T any]() reflect.Type {
+	return reflect.TypeOf((*T)(nil)).Elem()
+}
 
 var interfaceCache = struct {
 	sync.RWMutex
@@ -63,7 +62,9 @@ func getCachedInterface(t reflect.Type) any {
 	return instance
 }
 
-func resolveInterfaceInstance(t reflect.Type, iface reflect.Type) (any, bool) {
+func resolveInterfaceInstance[T any](t reflect.Type) (any, bool) {
+	iface := getInterface[T]()
+
 	if t.Implements(iface) {
 		return getCachedInterface(t), true
 	}
@@ -77,17 +78,25 @@ func resolveInterfaceInstance(t reflect.Type, iface reflect.Type) (any, bool) {
 	return nil, false
 }
 
-func extractSpec(t reflect.Type) *ParamSpec {
-	if value, ok := resolveInterfaceInstance(t, paramTypeInterface); ok {
-		spec := value.(ParamType).Spec()
+func extractSpec(t reflect.Type) *Spec {
+	if value, ok := resolveInterfaceInstance[paramType](t); ok {
+		spec := value.(paramType).Spec()
 		return &spec
 	}
 	return nil
 }
 
 func extractFormat(Type reflect.Type) string {
-	if value, ok := resolveInterfaceInstance(Type, paramWithFormatInterface); ok {
-		return value.(ParamWithFormat).Format()
+	if value, ok := resolveInterfaceInstance[paramWithFormat](Type); ok {
+		return value.(paramWithFormat).Format()
 	}
 	return ""
+}
+
+func extractIn(t reflect.Type) ParamIn {
+	if value, ok := resolveInterfaceInstance[paramWithIn](t); ok {
+		return value.(paramWithIn).In()
+	}
+
+	return ParamUndefined
 }

@@ -38,7 +38,7 @@ func Calculate(calc Calculation) (Result, goapi.APIError) {
 
 func EndpointSuccess(t *testing.T) {
 	router := httprouter.New()
-	api := goapi.NewAPI(router, goapi.DefaultErrorHandler())
+	api := goapi.NewAPI(router, goapi.DefaultErrorHandler(), goapi.AppMeta{})
 	appRouter := api.Router()
 	handle := appRouter.Route(goapi.MethodPost, "/calculate", Calculate, goapi.RouteSpec{})
 
@@ -71,7 +71,7 @@ func EndpointSuccess(t *testing.T) {
 
 func EndpointFail(t *testing.T) {
 	router := httprouter.New()
-	api := goapi.NewAPI(router, goapi.DefaultErrorHandler())
+	api := goapi.NewAPI(router, goapi.DefaultErrorHandler(), goapi.AppMeta{})
 	appRouter := api.Router()
 
 	handle := appRouter.Route(goapi.MethodPost, "/calculate", Calculate, goapi.RouteSpec{})

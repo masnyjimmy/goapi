@@ -7,13 +7,15 @@ info:
   description: {{.Description}}
   {{- end}}
 
+{{- if .Servers}}
 servers:
   {{- range $index, $element := .Servers}}
-  - url: http://{{$element.Url}}
+  - url: {{$element.Url}}
     {{- if $element.Description}}
     description: {{$element.Description}}
     {{- end}}
   {{- end}}
+{{- end}}
 
 tags:
   {{- range $index, $element := .Tags}}
