@@ -67,14 +67,6 @@ func NewAPI[E error, T any](
 			return errorHandler(r, req, err.(E))
 		},
 		router: router,
-		Meta: AppMeta{
-			Title:       "Test app",
-			Version:     "1.0.0",
-			Description: "Some App",
-		},
-		Servers: Servers{
-			{Url: "localhost:80"},
-		},
 	}
 
 	schema, err := api.Schemas.RegisterSchema(GetType[T]())
@@ -89,10 +81,6 @@ func NewAPI[E error, T any](
 
 	return api
 }
-
-// func apiHandle(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-
-// }
 
 func (api *API) Router() Router {
 	return Router{
