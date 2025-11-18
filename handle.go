@@ -57,6 +57,11 @@ type HandleData struct {
 	Params   []HandleParam
 }
 
+func DebugLol()
+{
+
+}
+
 func makeRouterHandle(api *API, data HandleData) httprouter.Handle {
 
 	errorHandler := api.errorHandler
@@ -66,6 +71,7 @@ func makeRouterHandle(api *API, data HandleData) httprouter.Handle {
 		req *http.Request,
 		params httprouter.Params,
 	) {
+		DebugLol()
 		endpointType := reflect.TypeOf(data.Endpoint)
 		out := make([]reflect.Value, len(data.Params))
 		bodyParams := make([]int, 0)
