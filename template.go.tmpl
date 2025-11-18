@@ -1,0 +1,144 @@
+{{- $errorScheme := errorName -}}
+openapi: 3.1.0
+info:
+  {{- with .Meta}}
+  title: {{.Title}}
+  version: {{.Version}}
+  description: {{.Description}}
+  {{- end}}
+
+servers:
+  {{- range $index, $element := .Servers}}
+  - url: http://{{$element.Url}}
+    {{- if $element.Description}}
+    description: {{$element.Description}}
+    {{- end}}
+  {{- end}}
+
+tags:
+  {{- range $index, $element := .Tags}}
+  - name: {{$element.Name}}
+    {{- if $element.Description}}
+    description: {{$element.Description}}
+    {{- end}}
+  {{- end}}
+
+  {{- if .Schemas}}
+components:
+  schemas:
+    {{- range $element := .Schemas}}
+    {{$element.Name}}:
+      type: object
+      properties:
+        {{- range $prop := $element.Properties}}
+        {{$prop.Name}}:
+          type: {{$prop.Meta.Type}}
+          {{- range $key, $value := $prop.Meta.Rest}}
+          {{$key}}: {{$value}}
+          {{- end}}
+        {{- end}}
+    {{- end}}
+    {{- range $element := .SchemeGroups}}
+    {{$element.Name}}:
+      properties:
+        {{- range $scheme := $element.Schemes}}
+        {{schemePrefix $scheme}}:
+          $ref: '#/components/schemas/{{$scheme}}'
+        {{- end}}
+    {{- end}}
+  {{- end}}
+paths:
+  {{- range $element := .Endpoints}}
+  {{$element.Path}}:
+    {{- range $method := $element.Methods}}
+    {{$method.Method}}:
+      {{- if $method.Tags}}
+      tags:
+        {{- range $tag := $method.Tags}}
+        - {{$tag}}
+        {{- end}}
+      {{- end}}
+      {{- if $method.Summary}}
+      summary: {{$method.Summary}}
+      {{- end}}
+      {{- if $method.Description}}
+      description: {{$method.Description}}
+      {{- end}}
+      {{- if $method.OperationId}}
+      operationId: {{$method.OperationId}}
+      {{- end}}
+      {{- if $method.Parameters}}
+      parameters:
+        {{- range $param := $method.Parameters}}
+        - name: {{$param.Name}}
+          {{- if $param.Description}}
+          description: {{$param.Description}}
+          {{- end}}
+          in: {{$param.In}}
+          required: {{$param.Required}}
+          schema:
+            {{- with $param.Meta}}
+            type: {{.Type}}
+            {{- range $key, $val := .Rest}}
+            {{$key}}: {{$val}}
+            {{- end}}
+            {{- end}}
+        {{- end}}
+      {{- end}}
+      {{- if $method.RequestBody}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/{{$method.RequestBody}}'
+      {{- end}}
+      responses:
+        '2XX':
+          description: Successful Response
+          {{- if $method.ResponseType}}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{$method.ResponseType}}'
+          {{- end}}
+        {{- if $errorScheme}}
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{$errorScheme}}'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{$errorScheme}}'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{$errorScheme}}'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{$errorScheme}}'
+        '422':
+          description: Unprocessable Content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{$errorScheme}}'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{$errorScheme}}'
+        {{- end}}
+    {{- end}}
+  {{- end}}
